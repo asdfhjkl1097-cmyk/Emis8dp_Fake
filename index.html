@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="hy"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>School</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+:root{--bg:#f4f1ff;--card:#fff;--tx:#231f3b;--mu:#6b6788;--p:#7c3aed;--g:linear-gradient(120deg,#7c3aed,#ec4899 55%,#f59e0b);--bd:#e4defa}
+:root[data-theme=dark]{--bg:#12101f;--card:#1e1b33;--tx:#ece9ff;--mu:#a29fc4;--p:#a78bfa;--bd:#332f52}
+*{box-sizing:border-box}body{margin:0;font:15px system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{background:var(--g);color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+header b{font-size:18px;flex:1}header select,header button{border:0;border-radius:10px;padding:6px 10px;background:#ffffff33;color:#fff}
+header option{color:#000}
+nav{display:flex;gap:6px;padding:10px;overflow-x:auto}nav button{white-space:nowrap;background:var(--card);color:var(--tx);border:1px solid var(--bd)}nav button.on{background:var(--g);color:#fff;border:0}
+main{padding:0 10px 30px;max-width:1000px;margin:auto}
+button{background:var(--p);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:inherit;cursor:pointer;margin:2px}
+button.d{background:#ef4444}button.g{background:var(--mu)}
+input,select{width:100%;padding:9px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;margin:3px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:10px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;box-shadow:0 4px 14px #7c3aed14;display:flex;flex-direction:column;gap:4px}
+.tag{font-size:12px;background:var(--g);color:#fff;border-radius:8px;padding:2px 8px;align-self:flex-start}
+small{color:var(--mu)}label{display:block;font-size:13px;color:var(--mu)}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:14px;overflow:hidden;margin-top:10px}td,th{padding:8px;border-bottom:1px solid var(--bd);text-align:left}
+.ov{position:fixed;inset:0;background:#0009;display:flex;align-items:center;justify-content:center;padding:14px;z-index:9}.ov form{width:100%;max-width:380px;max-height:90vh;overflow:auto}
+.msgs{height:50vh;overflow:auto;background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:10px;margin:8px 0}
+.m{margin:6px 0}.m b{color:var(--p)}.row{display:flex;gap:6px}
+video{width:100%;max-width:420px;border-radius:16px}#lg{max-width:340px;margin:12vh auto}
+</style></head><body>
+<header><b id=ttl></b><select id=lang onchange="setLang(this.value)"><option value=hy>Հայերեն</option><option value=ru>Русский</option><option value=en>English</option></select><button onclick="toggleTheme()">◐</button><button id=lo onclick="out()"></button></header>
+<div id=app></div>
+<script>
+const $=i=>document.getElementById(i),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LI={hy:0,ru:1,en:2};
+const T={
+title:['Դպրոց','Школа','School'],login:['Մուտքանուն','Логин','Login'],password:['Գաղտնաբառ','Пароль','Password'],signin:['Մուտք','Войти','Sign in'],out:['Ելք','Выйти','Log out'],
+admin:['Ադմին','Админ','Admin'],director:['Տնօրեն','Директор','Director'],teacher:['Ուսուցիչ','Учитель','Teacher'],student:['Աշակերտ','Ученик','Student'],scanner:['Սկաներ','Сканер','Scanner'],
+users:['Օգտատերեր','Пользователи','Users'],classes:['Դասարաններ','Классы','Classes'],schedule:['Դասացուցակ','Расписание','Schedule'],scans:['Սկանավորումներ','Журнал сканов','Scan log'],
+chat:['Չատ','Чат','Chat'],grades:['Ամսագիր','Журнал','Gradebook'],home:['Գլխավոր','Главная','Home'],qr:['Իմ QR-ը','Мой QR','My QR'],scan:['Սկանավորել','Сканировать','Scan'],
+add:['Ավելացնել','Добавить','Add'],edit:['Փոփոխել','Изменить','Edit'],del:['Ջնջել','Удалить','Delete'],save:['Պահպանել','Сохранить','Save'],cancel:['Չեղարկել','Отмена','Cancel'],
+first:['Անուն','Имя','First name'],last:['Ազգանուն','Фамилия','Last name'],code:['QR կոդ (դատարկ = ավտո)','QR-код (пусто = авто)','QR code (empty = auto)'],role:['Դեր','Роль','Role'],name:['Անվանում','Название','Name'],
+subject:['Առարկա','Предмет','Subject'],date:['Ամսաթիվ','Дата','Date'],weekday:['Օր','День','Day'],start:['Սկիզբ','Начало','Start'],end:['Ավարտ','Конец','End'],
+class_id:['Դասարան','Класс','Class'],teacher_id:['Ուսուցիչ','Учитель','Teacher'],user_id:['Անդամ','Участник','Member'],
+now:['Ընթացիկ դաս','Текущий урок','Current lesson'],none:['Դաս չկա','Урока нет','No lesson now'],send:['Ուղարկել','Отправить','Send'],members:['Անդամներ','Участники','Members'],
+who:['Սկաներ','Сканер','Scanner'],when:['Երբ','Когда','When'],scanned:['Սկանավորված','Отсканирован','Scanned'],wrong:['Սխալ մուտքանուն կամ գաղտնաբառ','Неверный логин или пароль','Wrong login or password'],
+mygrades:['Իմ գնահատականները','Мои оценки','My grades']};
+const D=[['Կիր','Երկ','Երք','Չոր','Հնգ','Ուր','Շաբ'],['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],['Sun','Mon','Tue','Wed','Thu','Fri','Sat']];
+const t=k=>(T[k]||[])[LI[S.lang]]||k;
+const S={lang:localStorage.lang||'hy',theme:localStorage.theme||'light',tok:localStorage.tok,me:null,tab:null};let P,ST,U=[];
+const TABS={admin:['users','classes','schedule','scans','chat','qr'],director:['users','schedule','qr'],teacher:['grades','chat','schedule','qr'],student:['home','chat','qr'],scanner:['scan']};
+
+async function api(p,m='GET',b){const r=await fetch('/api/'+p,{method:m,headers:{'Content-Type':'application/json',Authorization:'Bearer '+(S.tok||'')},body:b?JSON.stringify(b):undefined});
+ if(r.status==401&&S.tok){out();throw 0}if(!r.ok)throw new Error(r.status);return r.json()}
+function applyPrefs(){document.documentElement.dataset.theme=S.theme;document.documentElement.lang=S.lang;$('lang').value=S.lang;$('ttl').textContent='🎓 '+t('title');$('lo').textContent=t('out');$('lo').hidden=!S.me;
+ localStorage.lang=S.lang;localStorage.theme=S.theme;if(S.me)api('me/prefs','PUT',{lang:S.lang,theme:S.theme}).catch(()=>{})}
+function setLang(l){S.lang=l;applyPrefs();S.me?shell():loginView()}
+function toggleTheme(){S.theme=S.theme=='dark'?'light':'dark';applyPrefs()}
+function out(){clearInterval(P);stopCam();delete localStorage.tok;S.tok=null;S.me=null;applyPrefs();loginView()}
+
+function loginView(){$('app').innerHTML=`<form id=lg class=card><h2>${t('title')}</h2><input name=login placeholder="${t('login')}" autocomplete=username><input name=password type=password placeholder="${t('password')}" autocomplete=current-password><button>${t('signin')}</button><small id=er></small></form>`;
+ $('lg').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+  try{const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});if(!r.ok)throw 0;const d=await r.json();S.tok=localStorage.tok=d.token;S.me=d.me;S.lang=d.me.lang||S.lang;S.theme=d.me.theme||S.theme;applyPrefs();shell()}catch{$('er').textContent=t('wrong')}}}
+function shell(){const tb=TABS[S.me.role];$('app').innerHTML=`<nav>${tb.map(x=>`<button id=t_${x} onclick="go('${x}')">${t(x)}</button>`).join('')}</nav><main id=v></main>`;go(tb.includes(S.tab)?S.tab:tb[0])}
+function go(x){clearInterval(P);stopCam();S.tab=x;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.id=='t_'+x));V[x]().catch(()=>{})}
+
+function ask(title,fields,v,cb){const d=document.createElement('div');d.className='ov';
+ d.innerHTML=`<form class=card><h3>${title}</h3>`+fields.map(f=>`<label>${t(f.k)}${f.o?`<select name=${f.k}>${f.o.map(o=>`<option value="${o[0]}" ${o[0]==v[f.k]?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`:`<input name=${f.k} type=${f.type||'text'} value="${f.type=='password'?'':esc(v[f.k]??'')}">`}</label>`).join('')+`<button>${t('save')}</button><button type=button class=g>${t('cancel')}</button></form>`;
+ d.querySelector('.g').onclick=()=>d.remove();
+ d.querySelector('form').onsubmit=async e=>{e.preventDefault();try{await cb(Object.fromEntries(new FormData(e.target)));d.remove()}catch{alert('Error / Սխալ')}};document.body.append(d)}
+const roleOpts=()=>['admin','director','teacher','student','scanner'].map(r=>[r,t(r)]);
+const nm=u=>esc(u.first+' '+(u.last||''));
+
+async function uForm(id){const u=U.find(x=>x.id==id)||{role:'student'};
+ ask(t(id?'edit':'add'),[{k:'role',o:roleOpts()},{k:'first'},{k:'last'},{k:'login'},{k:'password',type:'password'},{k:'code'}],u,async d=>{await api(id?'users/'+id:'users',id?'PUT':'POST',d);V.users()})}
+async function uDel(id){if(confirm(t('del')+'?')){await api('users/'+id,'DELETE');V.users()}}
+async function cAdd(){ask(t('add'),[{k:'name'}],{},async d=>{await api('classes','POST',d);V.classes()})}
+async function cDel(id){if(confirm(t('del')+'?')){await api('classes/'+id,'DELETE');V.classes()}}
+async function cOpen(id){const [m,us]=await Promise.all([api(`classes/${id}/members`),api('users')]);const ids=m.map(x=>x.id);
+ $('cm').innerHTML=`<h3>${t('members')}</h3><div class=row><select id=nu>${us.filter(u=>['student','teacher'].includes(u.role)&&!ids.includes(u.id)).map(u=>`<option value=${u.id}>${esc(u.first+' '+u.last)} (${t(u.role)})</option>`).join('')}</select><button onclick="cAddM(${id})">${t('add')}</button></div>`+
+ `<table>${m.map(u=>`<tr><td>${nm(u)}</td><td><small>${t(u.role)}</small></td><td><button class=d onclick="cRm(${id},${u.id})">✕</button></td></tr>`).join('')}</table>`}
+async function cAddM(c){if($('nu').value){await api(`classes/${c}/members`,'POST',{user_id:$('nu').value});cOpen(c)}}
+async function cRm(c,u){await api(`classes/${c}/members/${u}`,'DELETE');cOpen(c)}
+async function lForm(){const [cs,us]=await Promise.all([api('classes'),api('users')]);
+ ask(t('add'),[{k:'class_id',o:cs.map(c=>[c.id,c.name])},{k:'teacher_id',o:us.filter(u=>u.role=='teacher').map(u=>[u.id,u.first+' '+u.last])},{k:'subject'},{k:'weekday',o:D[LI[S.lang]].map((d,i)=>[i,d])},{k:'start',type:'time'},{k:'end',type:'time'}],{},async d=>{await api('lessons','POST',d);V.schedule()})}
+async function lDel(id){await api('lessons/'+id,'DELETE');V.schedule()}
+
+const V={
+async users(){U=await api('users');const ro=S.me.role!='admin';
+ $('v').innerHTML=(ro?'':`<button onclick="uForm()">+ ${t('add')}</button>`)+'<div class=grid>'+U.map(u=>`<div class=card><b>${nm(u)}</b><span class=tag>${t(u.role)}</span><small>${esc(u.login)} · ${u.code}</small>${ro?'':`<div><button onclick="uForm(${u.id})">${t('edit')}</button><button class=d onclick="uDel(${u.id})">${t('del')}</button></div>`}</div>`).join('')+'</div>'},
+async classes(){const cs=await api('classes');$('v').innerHTML=`<button onclick="cAdd()">+ ${t('add')}</button><div class=grid>`+cs.map(c=>`<div class=card><b>${esc(c.name)}</b><div><button onclick="cOpen(${c.id})">${t('members')}</button><button class=d onclick="cDel(${c.id})">${t('del')}</button></div></div>`).join('')+'</div><div id=cm></div>'},
+async schedule(){const ls=await api('lessons'),a=S.me.role=='admin';
+ $('v').innerHTML=(a?`<button onclick="lForm()">+ ${t('add')}</button>`:'')+`<table><tr><th>${t('weekday')}</th><th>${t('start')}–${t('end')}</th><th>${t('subject')}</th><th>${t('class_id')}</th><th>${t('teacher_id')}</th><th></th></tr>`+ls.map(l=>`<tr><td>${D[LI[S.lang]][l.weekday]}</td><td>${l.start}–${l.end}</td><td>${esc(l.subject)}</td><td>${esc(l.cls)}</td><td>${esc(l.teacher)}</td><td>${a?`<button class=d onclick="lDel(${l.id})">✕</button>`:''}</td></tr>`).join('')+'</table>'},
+async scans(){const r=await api('scans');$('v').innerHTML=`<table><tr><th>${t('when')}</th><th>${t('who')}</th><th>${t('scanned')}</th></tr>`+r.map(s=>`<tr><td>${new Date(s.ts).toLocaleString()}</td><td>${esc(s.scanner)}</td><td>${esc((s.first||'?')+' '+(s.last||''))}</td></tr>`).join('')+'</table>'},
+async qr(){const q=qrcode(0,'M');q.addData(S.me.code);q.make();$('v').innerHTML=`<div class=card style="align-items:center"><h3>${nm(S.me)}</h3><span class=tag>${t(S.me.role)}</span><div style="background:#fff;padding:12px;border-radius:12px">${q.createImgTag(7)}</div></div>`},
+async home(){const [ls,gr]=await Promise.all([api('lessons'),api('grades')]),n=new Date(),hm=n.toTimeString().slice(0,5);
+ const cur=ls.find(l=>l.weekday==n.getDay()&&l.start<=hm&&hm<=l.end);
+ $('v').innerHTML=`<div class=card><small>${t('now')}</small><h2>${cur?esc(cur.subject):t('none')}</h2>${cur?`<small>${cur.start}–${cur.end} · ${esc(cur.teacher)}</small>`:''}</div><h3>${t('mygrades')}</h3><table>${gr.map(g=>`<tr><td>${g.date}</td><td>${esc(g.subject)}</td><td><b>${g.grade}</b></td></tr>`).join('')}</table>`},
+async grades(){const cs=await api('classes');
+ $('v').innerHTML=`<div class=grid><select id=gc onchange=gLoad()>${cs.map(c=>`<option value=${c.id}>${esc(c.name)}</option>`).join('')}</select><input id=gs placeholder="${t('subject')}" onchange=gLoad()><input id=gd type=date value="${new Date().toISOString().slice(0,10)}" onchange=gLoad()></div><div id=gt></div>`;gLoad()},
+async chat(){const cs=await api('classes');
+ $('v').innerHTML=`<select id=cc onchange=chLoad()>${cs.map(c=>`<option value=${c.id}>${esc(c.name)}</option>`).join('')}</select><div id=msgs class=msgs></div><div class=row><input id=mi onkeydown="if(event.key=='Enter')chSend()"><button onclick=chSend()>${t('send')}</button></div>`;chLoad();P=setInterval(chPoll,3000)},
+async scan(){$('v').innerHTML=`<video id=vid playsinline muted></video><canvas id=cv hidden></canvas><div id=res class=card style="margin-top:10px"><h2>—</h2></div>`;
+ ST=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});vid.srcObject=ST;await vid.play();let last='',lt=0;
+ (function loop(){if(!ST)return;if(vid.readyState>=2){cv.width=vid.videoWidth;cv.height=vid.videoHeight;const c=cv.getContext('2d');c.drawImage(vid,0,0);
+  const r=jsQR(c.getImageData(0,0,cv.width,cv.height).data,cv.width,cv.height);
+  if(r&&(r.data!=last||Date.now()-lt>3000)){last=r.data;lt=Date.now();api('scan','POST',{code:r.data}).then(u=>{$('res').innerHTML=`<h2>${nm(u)}</h2><span class=tag>${t(u.role)}</span>`;navigator.vibrate&&navigator.vibrate(80)}).catch(()=>{$('res').innerHTML='<h2>✕</h2>'})}}
+  requestAnimationFrame(loop)})()}};
+function stopCam(){if(ST){ST.getTracks().forEach(x=>x.stop());ST=null}}
+
+async function gLoad(){const c=$('gc').value,s=$('gs').value,d=$('gd').value;if(!c)return;const m=(await api(`classes/${c}/members`)).filter(u=>u.role=='student');
+ const gr=s?await api(`grades?class_id=${c}&subject=${encodeURIComponent(s)}&date=${d}`):[];const g={};gr.forEach(x=>g[x.student_id]=x.grade);
+ $('gt').innerHTML='<table>'+m.map(u=>`<tr><td>${nm(u)}</td><td><select ${s?'':'disabled'} onchange="gSet(${c},${u.id},this.value)"><option value=""></option>${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${g[u.id]==n?'selected':''}>${n}</option>`).join('')}</select></td></tr>`).join('')+'</table>'}
+async function gSet(c,u,v){await api('grades','POST',{class_id:c,student_id:u,subject:$('gs').value,date:$('gd').value,grade:v})}
+let last=0;
+async function chLoad(){last=0;$('msgs').innerHTML='';chPoll()}
+async function chPoll(){const c=$('cc')&&$('cc').value;if(!c)return;const r=await api(`chat/${c}?after=${last}`).catch(()=>[]);const b=$('msgs');
+ r.forEach(m=>{last=m.id;b.insertAdjacentHTML('beforeend',`<div class=m><b>${esc(m.first+' '+(m.last||''))}</b> <small>${t(m.role)} · ${new Date(m.ts).toLocaleTimeString().slice(0,5)}</small><br>${esc(m.text)}</div>`)});if(r.length)b.scrollTop=b.scrollHeight}
+async function chSend(){const i=$('mi');if(!i.value.trim())return;await api('chat/'+$('cc').value,'POST',{text:i.value});i.value='';chPoll()}
+
+(async()=>{applyPrefs();if(S.tok){try{S.me=await api('me');S.lang=S.me.lang||S.lang;S.theme=S.me.theme||S.theme;applyPrefs();return shell()}catch{}}loginView()})();
+</script></body></html>
