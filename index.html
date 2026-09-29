@@ -115,5 +115,10 @@ async function chPoll(){const c=$('cc')&&$('cc').value;if(!c)return;const r=awai
  r.forEach(m=>{last=m.id;b.insertAdjacentHTML('beforeend',`<div class=m><b>${esc(m.first+' '+(m.last||''))}</b> <small>${t(m.role)} · ${new Date(m.ts).toLocaleTimeString().slice(0,5)}</small><br>${esc(m.text)}</div>`)});if(r.length)b.scrollTop=b.scrollHeight}
 async function chSend(){const i=$('mi');if(!i.value.trim())return;await api('chat/'+$('cc').value,'POST',{text:i.value});i.value='';chPoll()}
 
-(async()=>{applyPrefs();if(S.tok){try{S.me=await api('me');S.lang=S.me.lang||S.lang;S.theme=S.me.theme||S.theme;applyPrefs();return shell()}catch{}}loginView()})();
+function setupView(){$('app').innerHTML=`<form id=lg class=card><h2>${t('setup')}</h2><input name=login placeholder="${t('login')}" autocomplete=username required><input name=password type=password minlength=8 placeholder="${t('password')} (8+)" autocomplete=new-password required><button>${t('save')}</button><small id=er></small></form>`;
+ $('lg').onsubmit=async e=>{e.preventDefault();const f=Object.fromEntries(new FormData(e.target));
+  try{const r=await fetch('/api/setup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(f)});if(!r.ok)throw 0;const d=await r.json();S.tok=localStorage.tok=d.token;S.me=d.me;applyPrefs();shell()}catch{$('er').textContent='Error'}}}
+T.setup=['Ստեղծեք ադմինի մուտքանուն և գաղտնաբառ','Создайте логин и пароль администратора','Create the admin login and password'];
+(async()=>{applyPrefs();if(S.tok){try{S.me=await api('me');S.lang=S.me.lang||S.lang;S.theme=S.me.theme||S.theme;applyPrefs();return shell()}catch{}}
+ try{const s=await(await fetch('/api/setup')).json();if(s.needed)return setupView()}catch{}loginView()})();
 </script></body></html>

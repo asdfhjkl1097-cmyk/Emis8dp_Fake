@@ -11,13 +11,21 @@ CREATE TABLE IF NOT EXISTS messages(id INTEGER PRIMARY KEY,class_id INTEGER REFE
 CREATE TABLE IF NOT EXISTS scans(id INTEGER PRIMARY KEY,scanner_id INTEGER,target_id INTEGER,ts INTEGER);`);
 const q=(s,...a)=>db.prepare(s).all(...a),one=(s,...a)=>db.prepare(s).get(...a),run=(s,...a)=>db.prepare(s).run(...a);
 const newCode=()=>crypto.randomBytes(5).toString('hex');
-if(!one("SELECT 1 FROM users WHERE role='admin'"))run("INSERT INTO users(role,first,last,login,hash,code) VALUES('admin','Admin','',?,?,?)",'admin',bcrypt.hashSync(process.env.ADMIN_PASS||'admin123',10),newCode());
 
 const app=express();app.use(express.json());app.use(express.static(path.join(__dirname,'public')));
 const tok=u=>jwt.sign({id:u.id,v:u.hash.slice(-12)},SECRET,{expiresIn:'30d'});
 const pub=u=>({id:u.id,role:u.role,first:u.first,last:u.last,login:u.login,code:u.code,lang:u.lang,theme:u.theme});
 const wrap=f=>(a,b)=>{try{b.json(f(a)||{})}catch(e){b.status(String(e.code).includes('UNIQUE')?409:400).json({error:e.message})}};
 app.post('/api/login',(a,b)=>{const u=one('SELECT * FROM users WHERE login=?',a.body.login);if(!u||!bcrypt.compareSync(a.body.password||'',u.hash))return b.sendStatus(401);b.json({token:tok(u),me:pub(u)})});
+
+// first run: no admin yet -> the site asks for admin login and password
+const noAdmin=()=>!one("SELECT 1 FROM users WHERE role='admin'");
+app.get('/api/setup',(a,b)=>b.json({needed:noAdmin()}));
+app.post('/api/setup',(a,b)=>{const{login,password}=a.body||{};
+ if(!noAdmin())return b.sendStatus(403);
+ if(!login||!password||password.length<8)return b.status(400).json({error:'weak'});
+ run("INSERT INTO users(role,first,last,login,hash,code) VALUES('admin','Admin','',?,?,?)",login,bcrypt.hashSync(password,10),newCode());
+ const u=one('SELECT * FROM users WHERE login=?',login);b.json({token:tok(u),me:pub(u)})});
 
 // every request re-reads the user from the DB: admin edits/deletes apply instantly
 app.use('/api',(a,b,n)=>{try{const p=jwt.verify((a.headers.authorization||'').slice(7),SECRET),u=one('SELECT * FROM users WHERE id=?',p.id);if(!u||u.hash.slice(-12)!==p.v)throw 0;a.u=u;n()}catch{b.sendStatus(401)}});
